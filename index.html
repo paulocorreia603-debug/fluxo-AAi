@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Fluxo AI</title>
-<link rel="apple-touch-icon" href="icon.png"><link rel="icon" href="icon.png"><meta name="theme-color" content="#0F3D2A"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fluxo AI">
+<link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon.png"><link rel="icon" href="icon.png"><meta name="theme-color" content="#0F3D2A"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Fluxo AI">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
 <style>
 :root{--bg:#EEF1EC;--card:#fff;--ink:#17261D;--mute:#667568;--line:#D9DFD6;--ok:#1B7A4B;--bad:#B3342D;--btn:#17261D;--btnt:#fff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -162,6 +162,10 @@ svg circle,svg polygon{animation:fi .6s 1s both}@keyframes fi{from{opacity:0}}
 <div class="row"><input class="f" id="wsec" type="password" placeholder="Palavra-passe do webhook"></div>
 <div class="row"><button class="add" id="wsy">Ligar e sincronizar</button></div>
 <p class="mute" id="wst">Não ligado.</p></section>
+<section><h2>Notificações push</h2>
+<p class="mute" style="margin:0 0 8px">Avisos no iPhone quando cai uma venda. Abre o site pelo ícone do ecrã principal para ativar.</p>
+<div class="row"><button class="add" id="pn">🔔 Ativar notificações</button><button class="add g" id="pt" style="flex:0 0 auto">Teste</button></div>
+<p class="mute" id="ps"></p></section>
 <section><h2>Câmbio do dólar</h2>
 <p class="mute" style="margin:0 0 8px">Define uma vez. Os anúncios em dólar usam este valor.</p>
 <div class="row"><input class="f" id="fx2" type="number" inputmode="decimal" placeholder="1 USD = quantos Kz?"><button class="add" id="sf" style="flex:0 0 auto">Guardar</button></div></section>
@@ -176,7 +180,7 @@ svg circle,svg polygon{animation:fi .6s 1s both}@keyframes fi{from{opacity:0}}
 <div class="row"><button class="add g" id="rm">Apagar tudo</button></div>
 <p class="mute" id="msg"></p></section>
 </div>
-<p class="mute" style="text-align:center;font-size:12px;margin:24px 0 0">Fluxo AI · versão 15</p>
+<p class="mute" style="text-align:center;font-size:12px;margin:24px 0 0">Fluxo AI · versão 16</p>
 </main>
 <div class="toast" id="tt"></div>
 <script>
@@ -360,6 +364,15 @@ $("ai").onclick=function(){var R=range(),c=calc(R,ri().d),r0=ri(),L=["Analisa os
 $("ab").onclick=function(){var q=$("aq").value.trim();if(!q)return;var k=wsec();if(!k){$("ar").textContent="Liga primeiro as vendas automáticas em Mais (mesma palavra-passe).";return}window.AIASK=1;$("ai").onclick();$("ar").textContent="A pensar…";fetch(AIURL,{method:"POST",headers:{"x-k":k,"Content-Type":"application/json"},body:JSON.stringify({pergunta:q,contexto:AIT.split("\n").slice(1).join("\n"),hoje:today()})}).then(function(r){if(!r.ok)throw 1;return r.json()}).then(showAI).catch(function(){$("ar").textContent="Não consegui falar com a IA. Confirma a função ia no Supabase."})};
 $("mic").onclick=function(){var SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast("Usa o microfone do teclado 🎙️");$("aq").focus();return}var r=new SR();r.lang="pt-PT";r.interimResults=false;r.onresult=function(e){$("aq").value=e.results[0][0].transcript;$("ab").click()};r.onerror=function(){toast("Não ouvi. Usa o microfone do teclado 🎙️")};r.onend=function(){$("mic").textContent="🎤"};$("mic").textContent="🔴";try{r.start()}catch(e){$("mic").textContent="🎤"}};
 $("cai").onclick=function(){var k=wsec(),c=$("car");c.style.display="block";if(!k){c.textContent="Liga primeiro as vendas automáticas em Mais.";return}c.textContent="A analisar…";fetch(AIURL,{method:"POST",headers:{"x-k":k,"Content-Type":"application/json"},body:JSON.stringify({pergunta:"Analisa o meu caixa de despesas e ativos: onde gasto mais, o que posso cortar e como está o saldo. Dá 3 ações práticas. Não proponhas registos (acoes vazia).",contexto:caixaTxt(),hoje:today()})}).then(function(r){if(!r.ok)throw 1;return r.json()}).then(function(j){c.textContent=j.resposta||j.texto||"Sem resposta."}).catch(function(){c.textContent="Não consegui falar com a IA."})};
+var PURL="https://nqtfgtvonqkdxxapidfg.supabase.co/functions/v1/push";
+function b2u(s){var p="=".repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,"+").replace(/_/g,"/"));return Uint8Array.from(b,function(c){return c.charCodeAt(0)})}
+$("pn").onclick=function(){var k=wsec();if(!k){$("ps").textContent="Liga primeiro as vendas automáticas (palavra-passe).";return}
+ if(!("serviceWorker" in navigator)||!("PushManager" in window)){$("ps").textContent="Neste modo o iPhone não permite. Adiciona o site ao ecrã principal e abre por lá.";return}
+ $("ps").textContent="A ativar…";
+ navigator.serviceWorker.register("sw.js").then(function(){return navigator.serviceWorker.ready}).then(function(reg){
+  return caches.open("fluxo").then(function(c){return c.put("k",new Response(k))}).then(function(){return Notification.requestPermission()}).then(function(perm){if(perm!=="granted")throw "perm";
+   return fetch(PURL+"?acao=chave",{headers:{"x-k":k}}).then(function(r){return r.json()}).then(function(j){return reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b2u(j.chave)})})}).then(function(sub){return fetch(PURL,{method:"POST",headers:{"x-k":k,"Content-Type":"application/json"},body:JSON.stringify({endpoint:sub.endpoint})})}).then(function(r){if(!r.ok)throw 1;$("ps").textContent="Notificações ativas ✅"})}).catch(function(e){$("ps").textContent=e==="perm"?"Permissão recusada. Ativa em Definições › Notificações.":"Não consegui ativar. Confirma a função push."})};
+$("pt").onclick=function(){var k=wsec();if(!k)return;fetch(PURL,{method:"POST",headers:{"x-k":k,"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.json()}).then(function(j){$("ps").textContent="Teste enviado a "+(j.enviados||0)+" aparelho(s)."}).catch(function(){$("ps").textContent="Falhou o teste."})};
 $("th").onclick=function(){var d=document.documentElement,n=d.dataset.theme==="light"?"dark":"light";d.dataset.theme=n;try{localStorage.setItem("fluxo-th",n)}catch(e){}};
 $("pf").onchange=renderPainel;
 $("rep").onclick=function(){var l=data.filter(function(x){return String(x.id).indexOf("wh_")!==0&&x.type!=="despesa"&&x.type!=="ativo"}).pop();if(!l)return;edit(l);ed=null;toast("Último registo copiado: ajusta e guarda")};
